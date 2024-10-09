@@ -1,17 +1,15 @@
+import NAVIGATION from "@/common/constants/navigation";
+import theme from "@/common/constants/theme";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
+import { DashboardLayout } from "@toolpad/core";
+import { AppProvider } from "@toolpad/core/nextjs";
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
+import { Roboto } from "next/font/google";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+import "@/styles/globals.css";
+import { Box } from "@mui/material";
+
+const roboto = Roboto({ weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -25,8 +23,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+      <body className={`${roboto.className}`} data-toolpad-color-scheme>
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <AppProvider navigation={NAVIGATION} theme={theme}>
+            <DashboardLayout>
+              <Box
+                sx={{
+                  p: 4,
+                  m: 4,
+                  backgroundColor: "background.container",
+                  borderRadius: "1rem",
+                }}
+              >
+                {children}
+              </Box>
+            </DashboardLayout>
+          </AppProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
