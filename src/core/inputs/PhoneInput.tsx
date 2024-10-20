@@ -14,4 +14,6 @@ const PhoneInput = forwardRef<HTMLDivElement, PhoneInputProps>((props, ref) => {
    )
 })
 
+PhoneInput.displayName = 'PhoneInput'
+
 export default PhoneInput

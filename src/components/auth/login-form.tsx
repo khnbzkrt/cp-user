@@ -88,7 +88,7 @@ export default function LoginForm() {
             })
             .catch(error => {
                if (error?.response?.data?.errors) {
-                  for (let item in error.response?.data?.errors) {
+                  for (const item in error.response?.data?.errors) {
                      formik.setFieldError(
                         item,
                         error?.response?.data?.errors[item]?.toString()
