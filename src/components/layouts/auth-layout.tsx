@@ -1,19 +1,24 @@
-import { Box } from "@mui/material"
-import { ReactNode } from "react"
+import { ReactNode } from 'react'
+import { Box, ThemeProvider } from '@mui/material'
+import theme from '@/common/constants/theme'
 
 type AuthLayoutProps = {
-    children:ReactNode
+   children: ReactNode
 }
 
-export default function AuthLayout({children}:AuthLayoutProps){
-    return  <Box
-    sx={{
-      p: 4,
-      m: 4,
-      backgroundColor: "background.container",
-      borderRadius: "1rem",
-    }}
-  >
-    {children}
-  </Box>
+export default function AuthLayout({ children }: AuthLayoutProps) {
+   return (
+      <ThemeProvider theme={theme}>
+         <Box
+            sx={{
+               p: 4,
+               m: 4,
+               borderRadius: '1rem',
+               backgroundColor: 'Background.container'
+            }}
+         >
+            {children}
+         </Box>
+      </ThemeProvider>
+   )
 }
