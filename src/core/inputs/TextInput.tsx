@@ -1,7 +1,7 @@
 'use client'
 
 import { ChangeEvent, HTMLInputTypeAttribute } from 'react'
-import { FormLabel, TextField } from '@mui/material'
+import { FormControl, FormLabel, TextField } from '@mui/material'
 
 type TextInputProps = {
    label: string
@@ -23,9 +23,9 @@ export default function TextInput({
    type = 'text'
 }: TextInputProps) {
    return (
-      <div>
-         <FormLabel htmlFor={name}>{label}</FormLabel>
+      <FormControl>
          <TextField
+            label={label}
             type={type}
             autoComplete={name}
             name={name}
@@ -37,6 +37,6 @@ export default function TextInput({
             helperText={error}
             color={Boolean(error) ? 'error' : 'primary'}
          />
-      </div>
+      </FormControl>
    )
 }

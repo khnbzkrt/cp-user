@@ -8,7 +8,7 @@ type AuthLayoutProps = {
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
    return (
-      <ThemeProvider theme={theme}>
+      <ThemeProvider theme={theme} defaultMode="dark">
          <Box
             sx={{
                p: 4,

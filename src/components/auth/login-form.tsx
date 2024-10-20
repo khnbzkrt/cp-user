@@ -1,23 +1,15 @@
 'use client'
 
 import * as React from 'react'
-import {
-   Box,
-   Button,
-   Card,
-   Checkbox,
-   Divider,
-   FormControl,
-   FormControlLabel,
-   FormLabel,
-   Link,
-   Stack,
-   TextField,
-   Typography
-} from '@mui/material'
+import { Box, Button, Card, Stack, Typography } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { FacebookIcon, GoogleIcon, SitemarkIcon } from './custom-icons'
-
+import { useFormik } from 'formik'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import * as yup from 'yup'
+import { setAccessTokenToCookie } from '@/app/actions'
+import TextInput from '@/core/inputs/TextInput'
+import api from '@/lib/axiosInstance'
 
 const MuiCard = styled(Card)(({ theme }) => ({
    display: 'flex',
@@ -60,65 +52,66 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
    }
 }))
 
+type FormType = {
+   email: string
+   password: string
+}
+
 export default function LoginForm() {
-   const [emailError, setEmailError] = React.useState(false)
-   const [emailErrorMessage, setEmailErrorMessage] = React.useState('')
-   const [passwordError, setPasswordError] = React.useState(false)
-   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('')
+   const router = useRouter()
 
-   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-      if (emailError || passwordError) {
-         event.preventDefault()
-         return
-      }
-      const data = new FormData(event.currentTarget)
-      console.log({
-         email: data.get('email'),
-         password: data.get('password')
-      })
+   const validationSchema = yup.object({
+      email: yup
+         .string()
+         .email('Lütfen geçerli bir e-posta adresi girin')
+         .required('E-Posta adresi zorunludur'),
+      password: yup
+         .string()
+         .min(6, 'Şifreniz en az 6 karakterden oluşmalıdır')
+         .required('Şifre alanı zorunludur')
+   })
+
+   const initialValues: FormType = {
+      email: '',
+      password: ''
    }
 
-   const validateInputs = () => {
-      const email = document.getElementById('email') as HTMLInputElement
-      const password = document.getElementById('password') as HTMLInputElement
-
-      let isValid = true
-
-      if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
-         setEmailError(true)
-         setEmailErrorMessage('Please enter a valid email address.')
-         isValid = false
-      } else {
-         setEmailError(false)
-         setEmailErrorMessage('')
+   const formik = useFormik({
+      initialValues: initialValues,
+      validationSchema: validationSchema,
+      onSubmit: async values => {
+         await api
+            .post('/auth/login', values)
+            .then(async response => {
+               await setAccessTokenToCookie(response.data?.access_token)
+               router.push('/')
+            })
+            .catch(error => {
+               if (error?.response?.data?.errors) {
+                  for (let item in error.response?.data?.errors) {
+                     formik.setFieldError(
+                        item,
+                        error?.response?.data?.errors[item]?.toString()
+                     )
+                  }
+               }
+            })
       }
-
-      if (!password.value || password.value.length < 6) {
-         setPasswordError(true)
-         setPasswordErrorMessage('Password must be at least 6 characters long.')
-         isValid = false
-      } else {
-         setPasswordError(false)
-         setPasswordErrorMessage('')
-      }
-
-      return isValid
-   }
+   })
 
    return (
       <SignInContainer direction="column" justifyContent="space-between">
          <MuiCard variant="outlined">
-            <SitemarkIcon />
             <Typography
                component="h1"
                variant="h4"
                sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
             >
-               Sign in
+               Giriş Yap
             </Typography>
             <Box
                component="form"
-               onSubmit={handleSubmit}
+               onSubmit={formik.handleSubmit}
                noValidate
                sx={{
                   display: 'flex',
@@ -127,71 +120,37 @@ export default function LoginForm() {
                   gap: 2
                }}
             >
-               <FormControl>
-                  <FormLabel htmlFor="email">Email</FormLabel>
-                  <TextField
-                     error={emailError}
-                     helperText={emailErrorMessage}
-                     id="email"
-                     type="email"
-                     name="email"
-                     placeholder="your@email.com"
-                     autoComplete="email"
-                     autoFocus
-                     required
-                     fullWidth
-                     variant="outlined"
-                     color={emailError ? 'error' : 'primary'}
-                     sx={{ ariaLabel: 'email' }}
-                  />
-               </FormControl>
-               <FormControl>
-                  <Box
-                     sx={{ display: 'flex', justifyContent: 'space-between' }}
-                  >
-                     <FormLabel htmlFor="password">Password</FormLabel>
-                  </Box>
-                  <TextField
-                     error={passwordError}
-                     helperText={passwordErrorMessage}
-                     name="password"
-                     placeholder="••••••"
-                     type="password"
-                     id="password"
-                     autoComplete="current-password"
-                     autoFocus
-                     required
-                     fullWidth
-                     variant="outlined"
-                     color={passwordError ? 'error' : 'primary'}
-                  />
-               </FormControl>
-               <FormControlLabel
-                  control={<Checkbox value="remember" color="primary" />}
-                  label="Remember me"
+               <TextInput
+                  label="E-Posta"
+                  name="email"
+                  error={formik.touched.email && formik.errors.email}
+                  onChange={formik.handleChange}
+                  value={formik.values.email}
+                  type="email"
+               />
+
+               <TextInput
+                  label="Şifre"
+                  name="password"
+                  error={formik.touched.password && formik.errors.password}
+                  onChange={formik.handleChange}
+                  value={formik.values.password}
+                  type="password"
                />
                <Button
                   type="submit"
                   fullWidth
                   variant="contained"
-                  onClick={validateInputs}
+                  disabled={formik.isSubmitting}
                >
-                  Sign in
+                  Giriş Yap
                </Button>
                <Typography sx={{ textAlign: 'center' }}>
-                  Don&apos;t have an account?{' '}
-                  <span>
-                     <Link
-                        href="/register"
-                        variant="body2"
-                        sx={{ alignSelf: 'center' }}
-                     >
-                        Sign up
-                     </Link>
-                  </span>
+                  Herhangi bir hesabın var mı?{' '}
+                  <Link href="/register">Kayıt Ol</Link>
                </Typography>
             </Box>
-            <Divider>or</Divider>
+            {/* <Divider>or</Divider>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                <Button
                   fullWidth
@@ -209,7 +168,7 @@ export default function LoginForm() {
                >
                   Sign in with Facebook
                </Button>
-            </Box>
+            </Box> */}
          </MuiCard>
       </SignInContainer>
    )

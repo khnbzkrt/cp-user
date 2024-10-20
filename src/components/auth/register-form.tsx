@@ -1,19 +1,14 @@
 'use client'
 
-import {
-   Box,
-   Button,
-   Card,
-   Divider,
-   Link,
-   Stack,
-   Typography
-} from '@mui/material'
+import { Box, Button, Card, Stack, Typography } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { Form, Formik } from 'formik'
+import { useFormik } from 'formik'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import * as yup from 'yup'
+import PhoneInput from '@/core/inputs/PhoneInput'
 import TextInput from '@/core/inputs/TextInput'
-import { GoogleIcon } from './custom-icons'
+import api from '@/lib/axiosInstance'
 
 const MuiCard = styled(Card)(({ theme }) => ({
    display: 'flex',
@@ -40,31 +35,41 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
    [theme.breakpoints.up('sm')]: {
       padding: theme.spacing(4)
    },
-   backgroundImage:
-      'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
-   backgroundRepeat: 'no-repeat',
-   ...theme.applyStyles('dark', {
+   '&::before': {
+      content: '""',
+      display: 'block',
+      position: 'absolute',
+      zIndex: -1,
+      inset: 0,
       backgroundImage:
-         'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))'
-   })
+         'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
+      backgroundRepeat: 'no-repeat',
+      ...theme.applyStyles('dark', {
+         backgroundImage:
+            'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))'
+      })
+   }
 }))
 
 type FormType = {
-   firstName: string
-   lastName: string
+   name: string
+   surname: string
    email: string
+   phone: string
    password: string
    password_confirmation: string
 }
 
 export default function RegisterForm() {
+   const router = useRouter()
    const validationSchema = yup.object({
-      firstName: yup.string().required('Ad alanı zorunludur'),
-      lastName: yup.string().required('Soyad alanı zorunludur'),
+      name: yup.string().required('Ad alanı zorunludur'),
+      surname: yup.string().required('Soyad alanı zorunludur'),
       email: yup
          .string()
          .email('Lütfen geçerli bir e-posta adresi girin')
          .required('E-Posta adresi zorunludur'),
+      phone: yup.string().required('Telefon numarası zorunludur'),
       password: yup
          .string()
          .min(6, 'Şifreniz en az 6 karakterden oluşmalıdır')
@@ -76,11 +81,38 @@ export default function RegisterForm() {
    })
 
    const initialValues: FormType = {
-      firstName: '',
-      lastName: '',
+      name: '',
+      surname: '',
       email: '',
+      phone: '',
       password: '',
       password_confirmation: ''
+   }
+
+   const formik = useFormik({
+      initialValues: initialValues,
+      validationSchema: validationSchema,
+      onSubmit: async values => {
+         await api
+            .post('/auth/register', values)
+            .then(() => {
+               router.push('/login')
+            })
+            .catch(error => {
+               if (error?.response?.data?.errors) {
+                  for (let item in error.response?.data?.errors) {
+                     formik.setFieldError(
+                        item,
+                        error?.response?.data?.errors[item]?.toString()
+                     )
+                  }
+               }
+            })
+      }
+   })
+
+   const handlePhoneChange = (phone: string) => {
+      formik.setFieldValue('phone', phone)
    }
 
    return (
@@ -93,95 +125,90 @@ export default function RegisterForm() {
             >
                Kayıt Ol
             </Typography>
-            <Formik
-               onSubmit={values => console.log(values)}
-               validationSchema={validationSchema}
-               initialValues={initialValues}
-               validateOnChange={true}
-               validateOnBlur={true}
+            <Box
+               component="form"
+               onSubmit={formik.handleSubmit}
+               noValidate
+               sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%',
+                  gap: 2
+               }}
             >
-               {({
-                  values,
-                  handleChange,
-                  touched,
-                  errors,
-                  handleSubmit,
-                  isSubmitting
-               }) => (
-                  <Form onSubmit={handleSubmit}>
-                     <TextInput
-                        label="Ad"
-                        name="firstName"
-                        error={touched.firstName && errors.firstName}
-                        onChange={handleChange}
-                        value={values.firstName}
-                     />
+               <TextInput
+                  label="Ad"
+                  name="name"
+                  error={formik.touched.name && formik.errors.name}
+                  onChange={formik.handleChange}
+                  value={formik.values.name}
+               />
 
-                     <TextInput
-                        label="Soyad"
-                        name="lastName"
-                        error={touched.lastName && errors.lastName}
-                        onChange={handleChange}
-                        value={values.lastName}
-                     />
+               <TextInput
+                  label="Soyad"
+                  name="surname"
+                  error={formik.touched.surname && formik.errors.surname}
+                  onChange={formik.handleChange}
+                  value={formik.values.surname}
+               />
 
-                     <TextInput
-                        label="E-Posta"
-                        name="email"
-                        error={touched.email && errors.email}
-                        onChange={handleChange}
-                        value={values.email}
-                        type="email"
-                     />
+               <TextInput
+                  label="E-Posta"
+                  name="email"
+                  error={formik.touched.email && formik.errors.email}
+                  onChange={formik.handleChange}
+                  value={formik.values.email}
+                  type="email"
+               />
 
-                     <TextInput
-                        label="Şifre"
-                        name="password"
-                        error={touched.password && errors.password}
-                        onChange={handleChange}
-                        value={values.password}
-                        type="password"
-                     />
+               <PhoneInput
+                  label="Telefon Numarası"
+                  id="phone"
+                  name="phone"
+                  onChange={handlePhoneChange}
+                  value={formik.values.phone}
+                  error={Boolean(formik.touched.phone && formik.errors.phone)}
+                  helperText={formik.touched.phone && formik.errors.phone}
+                  defaultCountry="TR"
+               />
 
-                     <TextInput
-                        label="Şifre Tekrar"
-                        name="password_confirmation"
-                        error={
-                           touched.password_confirmation &&
-                           errors.password_confirmation
-                        }
-                        onChange={handleChange}
-                        value={values.password_confirmation}
-                        type="password"
-                     />
+               <TextInput
+                  label="Şifre"
+                  name="password"
+                  error={formik.touched.password && formik.errors.password}
+                  onChange={formik.handleChange}
+                  value={formik.values.password}
+                  type="password"
+               />
 
-                     <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        disabled={isSubmitting}
-                     >
-                        Kayıt Ol
-                     </Button>
-                     <Typography sx={{ textAlign: 'center' }}>
-                        Zaten bir hesabın var mı?{' '}
-                        <span>
-                           <Link
-                              href="/login"
-                              variant="body2"
-                              sx={{ alignSelf: 'center' }}
-                           >
-                              Giriş Yap
-                           </Link>
-                        </span>
-                     </Typography>
-                  </Form>
-               )}
-            </Formik>
-            <Divider>
+               <TextInput
+                  label="Şifre Tekrar"
+                  name="password_confirmation"
+                  error={
+                     formik.touched.password_confirmation &&
+                     formik.errors.password_confirmation
+                  }
+                  onChange={formik.handleChange}
+                  value={formik.values.password_confirmation}
+                  type="password"
+               />
+
+               <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={formik.isSubmitting}
+               >
+                  Kayıt Ol
+               </Button>
+               <Typography sx={{ textAlign: 'center' }}>
+                  Zaten bir hesabın var mı? <Link href="/login">Giriş Yap</Link>
+               </Typography>
+            </Box>
+            {/* <Divider>
                <Typography sx={{ color: 'text.secondary' }}>veya</Typography>
-            </Divider>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            </Divider> */}
+            {/* <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                <Button
                   fullWidth
                   variant="outlined"
@@ -190,7 +217,7 @@ export default function RegisterForm() {
                >
                   Google ile kayıt ol
                </Button>
-            </Box>
+            </Box> */}
          </MuiCard>
       </SignUpContainer>
    )
